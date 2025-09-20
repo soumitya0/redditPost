@@ -1,41 +1,50 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { RedditPost } from './types';
 import PostCard from './components/PostCard';
 import Header from './components/Header';
 import LoadingSpinner from './components/LoadingSpinner';
 
+const SUBREDDITS = ['IndianCivicFails', 'IdiotsInCars', 'roadrage', 'dashcamgifs'];
+
 const App: React.FC = () => {
   const [posts, setPosts] = useState<RedditPost[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [subreddit, setSubreddit] = useState<string>(SUBREDDITS[0]);
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('https://www.reddit.com/r/IndianCivicFails.json?limit=50');
+      const response = await fetch(`https://www.reddit.com/r/${subreddit}.json?limit=50`);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if (response.status === 404) {
+          throw new Error(`Subreddit 'r/${subreddit}' not found or is private.`);
+        }
+        throw new Error(`Failed to fetch: ${response.statusText} (${response.status})`);
       }
       const data = await response.json();
       const fetchedPosts = data.data.children.map((child: any) => child.data);
       setPosts(fetchedPosts);
     } catch (e) {
       if (e instanceof Error) {
-        setError(`Failed to fetch posts: ${e.message}`);
+        setError(e.message);
       } else {
         setError('An unknown error occurred.');
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [subreddit]);
 
   useEffect(() => {
     fetchPosts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchPosts]);
+
+  const handleSubredditChange = (newSubreddit: string) => {
+    setPosts([]); // Clear posts to show loading spinner immediately
+    setSubreddit(newSubreddit);
+  };
 
   const renderContent = () => {
     if (loading) {
@@ -62,7 +71,7 @@ const App: React.FC = () => {
     }
 
     if (posts.length === 0) {
-      return <p className="text-center text-slate-400">No posts found.</p>;
+      return <p className="text-center text-slate-400">No posts found in r/{subreddit}.</p>;
     }
 
     return (
@@ -76,12 +85,16 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 font-sans">
-      <Header />
+      <Header
+        subreddits={SUBREDDITS}
+        currentSubreddit={subreddit}
+        onSubredditChange={handleSubredditChange}
+      />
       <main className="container mx-auto px-4 py-8">
         {renderContent()}
       </main>
       <footer className="text-center py-6 text-slate-500 text-sm">
-        <p>Built for viewing r/IndianCivicFails. Not affiliated with Reddit.</p>
+        <p>Built for viewing Reddit. Not affiliated with Reddit.</p>
       </footer>
     </div>
   );
