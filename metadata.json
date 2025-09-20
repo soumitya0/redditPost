@@ -1,0 +1,5 @@
+{
+  "name": "Indian Civic Fails Reddit Viewer",
+  "description": "A web application to fetch and display the latest posts from the r/IndianCivicFails subreddit with a clean and modern user interface.",
+  "requestFramePermissions": []
+}
