@@ -23,30 +23,51 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // Use the new cleaner API endpoint with dynamic sorting
-      const apiEndpoint = `/api/reddit/${subreddit}?sort=${sortBy}&limit=50&_=${Date.now()}`;
-      const response = await fetch(apiEndpoint, { cache: "no-store" });
+      // Try our Vercel API first
+      let apiEndpoint = `/api/reddit/${subreddit}?sort=${sortBy}&limit=50&_=${Date.now()}`;
+      let response = await fetch(apiEndpoint, { cache: "no-store" });
       
+      // If our API fails, try public CORS proxy as fallback
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        console.log("Primary API failed, trying CORS proxy fallback...");
+        const redditUrl = `https://www.reddit.com/r/${subreddit}/${sortBy}.json?limit=50`;
+        const corsProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(redditUrl)}`;
         
-        if (response.status === 404) {
-          throw new Error(
-            `Subreddit 'r/${subreddit}' not found or is private.`
-          );
+        response = await fetch(corsProxy, { cache: "no-store" });
+        
+        if (response.ok) {
+          const proxyData = await response.json();
+          const data = JSON.parse(proxyData.contents);
+          const fetchedPosts = data.data.children.map((child: any) => child.data);
+          setPosts(fetchedPosts);
+          return;
         }
-        if (response.status === 403) {
-          throw new Error(
-            errorData.details || "Reddit is temporarily blocking requests from this server. Please try again in a few minutes."
-          );
-        }
+      }
+      
+      // If direct API works
+      if (response.ok) {
+        const data = await response.json();
+        const fetchedPosts = data.data.children.map((child: any) => child.data);
+        setPosts(fetchedPosts);
+        return;
+      }
+      
+      // Handle errors
+      const errorData = await response.json().catch(() => ({}));
+      
+      if (response.status === 404) {
         throw new Error(
-          errorData.details || `Failed to fetch: ${response.statusText} (${response.status})`
+          `Subreddit 'r/${subreddit}' not found or is private.`
         );
       }
-      const data = await response.json();
-      const fetchedPosts = data.data.children.map((child: any) => child.data);
-      setPosts(fetchedPosts);
+      if (response.status === 403) {
+        throw new Error(
+          errorData.details || "Reddit is temporarily blocking requests. Trying alternative method..."
+        );
+      }
+      throw new Error(
+        errorData.details || `Failed to fetch: ${response.statusText} (${response.status})`
+      );
     } catch (e) {
       if (e instanceof Error) {
         setError(e.message);
