@@ -23,17 +23,25 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const apiUrl = `https://www.reddit.com/r/${subreddit}/new.json?limit=50&raw_json=1&_=${Date.now()}`;
-      const proxied = `/api/fetch?url=${encodeURIComponent(apiUrl)}`;
-      const response = await fetch(proxied, { cache: "no-store" });
+      // Use the new cleaner API endpoint with dynamic sorting
+      const apiEndpoint = `/api/reddit/${subreddit}?sort=${sortBy}&limit=50&_=${Date.now()}`;
+      const response = await fetch(apiEndpoint, { cache: "no-store" });
+      
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        
         if (response.status === 404) {
           throw new Error(
             `Subreddit 'r/${subreddit}' not found or is private.`
           );
         }
+        if (response.status === 403) {
+          throw new Error(
+            errorData.details || "Reddit is temporarily blocking requests from this server. Please try again in a few minutes."
+          );
+        }
         throw new Error(
-          `Failed to fetch: ${response.statusText} (${response.status})`
+          errorData.details || `Failed to fetch: ${response.statusText} (${response.status})`
         );
       }
       const data = await response.json();
