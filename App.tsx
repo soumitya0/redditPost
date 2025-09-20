@@ -26,24 +26,28 @@ const App: React.FC = () => {
       // Try our Vercel API first
       let apiEndpoint = `/api/reddit/${subreddit}?sort=${sortBy}&limit=50&_=${Date.now()}`;
       let response = await fetch(apiEndpoint, { cache: "no-store" });
-      
+
       // If our API fails, try public CORS proxy as fallback
       if (!response.ok) {
         console.log("Primary API failed, trying CORS proxy fallback...");
         const redditUrl = `https://www.reddit.com/r/${subreddit}/${sortBy}.json?limit=50`;
-        const corsProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(redditUrl)}`;
-        
+        const corsProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(
+          redditUrl
+        )}`;
+
         response = await fetch(corsProxy, { cache: "no-store" });
-        
+
         if (response.ok) {
           const proxyData = await response.json();
           const data = JSON.parse(proxyData.contents);
-          const fetchedPosts = data.data.children.map((child: any) => child.data);
+          const fetchedPosts = data.data.children.map(
+            (child: any) => child.data
+          );
           setPosts(fetchedPosts);
           return;
         }
       }
-      
+
       // If direct API works
       if (response.ok) {
         const data = await response.json();
@@ -51,22 +55,22 @@ const App: React.FC = () => {
         setPosts(fetchedPosts);
         return;
       }
-      
+
       // Handle errors
       const errorData = await response.json().catch(() => ({}));
-      
+
       if (response.status === 404) {
-        throw new Error(
-          `Subreddit 'r/${subreddit}' not found or is private.`
-        );
+        throw new Error(`Subreddit 'r/${subreddit}' not found or is private.`);
       }
       if (response.status === 403) {
         throw new Error(
-          errorData.details || "Reddit is temporarily blocking requests. Trying alternative method..."
+          errorData.details ||
+            "Reddit is temporarily blocking requests. Trying alternative method..."
         );
       }
       throw new Error(
-        errorData.details || `Failed to fetch: ${response.statusText} (${response.status})`
+        errorData.details ||
+          `Failed to fetch: ${response.statusText} (${response.status})`
       );
     } catch (e) {
       if (e instanceof Error) {
