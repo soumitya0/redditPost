@@ -8,6 +8,9 @@ export interface RedditPost {
   permalink: string;
   url: string;
   created_utc: number;
+  // FIX: Add subreddit property to the interface to resolve a type error.
+  // This property is available from the Reddit API and is used in YouTubeModal.tsx.
+  subreddit: string;
   post_hint?: 'image' | 'hosted:video' | 'link' | 'self';
   preview?: {
     images: {
