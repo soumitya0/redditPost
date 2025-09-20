@@ -149,9 +149,10 @@ const YouTubeModal: React.FC<YouTubeModalProps> = ({ post, videoUrl, onClose, on
       <div className="p-6 overflow-y-auto space-y-4">
         <div className="text-center bg-green-900/30 text-green-300 p-4 rounded-lg">
           <h3 className="font-bold text-lg">Ready to Upload!</h3>
-          <p className="text-sm">Follow these final steps:</p>
+          <p className="text-sm mt-1">For your security, the final file selection must be done by you. We've automated everything else!</p>
+          <p className="text-sm mt-2 font-semibold">Just follow these last steps:</p>
         </div>
-        <ol className="list-decimal list-inside space-y-3 text-slate-300 text-sm pl-2">
+        <ol className="list-decimal list-inside space-y-3 text-slate-300 text-sm pl-2 mt-4">
             <li>Your video file has started downloading to your computer.</li>
             <li>Go to the new YouTube tab that just opened in your browser.</li>
             <li>Drag the downloaded video file onto the YouTube upload page.</li>

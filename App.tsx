@@ -5,18 +5,20 @@ import Header from './components/Header';
 import LoadingSpinner from './components/LoadingSpinner';
 
 const SUBREDDITS = ['IndianCivicFails', 'IdiotsInCars', 'roadrage', 'dashcamgifs'];
+type SortByType = 'hot' | 'top' | 'new';
 
 const App: React.FC = () => {
   const [posts, setPosts] = useState<RedditPost[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [subreddit, setSubreddit] = useState<string>(SUBREDDITS[0]);
+  const [sortBy, setSortBy] = useState<SortByType>('hot');
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`https://www.reddit.com/r/${subreddit}.json?limit=50`);
+      const response = await fetch(`https://www.reddit.com/r/${subreddit}/${sortBy}.json?limit=50`);
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error(`Subreddit 'r/${subreddit}' not found or is private.`);
@@ -35,7 +37,7 @@ const App: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [subreddit]);
+  }, [subreddit, sortBy]);
 
   useEffect(() => {
     fetchPosts();
@@ -45,6 +47,11 @@ const App: React.FC = () => {
     setPosts([]); // Clear posts to show loading spinner immediately
     setSubreddit(newSubreddit);
   };
+  
+  const handleSortChange = (newSort: SortByType) => {
+    setPosts([]);
+    setSortBy(newSort);
+  }
 
   const renderContent = () => {
     if (loading) {
@@ -89,6 +96,8 @@ const App: React.FC = () => {
         subreddits={SUBREDDITS}
         currentSubreddit={subreddit}
         onSubredditChange={handleSubredditChange}
+        currentSort={sortBy}
+        onSortChange={handleSortChange}
       />
       <main className="container mx-auto px-4 py-8">
         {renderContent()}
