@@ -44,7 +44,7 @@ const YouTubeModal: React.FC<YouTubeModalProps> = ({ post, videoUrl, onClose, on
               },
               description: {
                 type: Type.STRING,
-                description: `A detailed description for the YouTube video. Start with a hook, then explain the context. End with a credit to the original poster and subreddit.\nOriginal post: https://www.reddit.com${post.permalink}\nPosted by: u/${post.author}`
+                description: `A detailed and engaging description for the YouTube video, strictly under 3000 characters. Start with a strong hook to capture viewer attention, then provide a thorough explanation of the context and events in the video. Conclude by giving credit to the original poster and the subreddit.\nOriginal post: https://www.reddit.com${post.permalink}\nPosted by: u/${post.author}`
               },
               tags: {
                 type: Type.ARRAY,
@@ -98,7 +98,7 @@ const YouTubeModal: React.FC<YouTubeModalProps> = ({ post, videoUrl, onClose, on
       setAiContent(prev => prev ? {...prev, [field]: value} : null);
   }
 
-  const fullDescription = aiContent ? `${aiContent.description}\n\nHashtags:\n${aiContent.tags.map(t => `#${t.replace(/\s+/g, '')}`).join(' ')}` : '';
+  const fullDescription = aiContent ? `${aiContent.description}\n\nHashtags:\n${aiContent.tags.map(t => `#${t.replace(/\s+/g, '')}`).join(' ')} #India #CivicFails #indianCivis` : '';
 
   const renderGenerateView = () => (
     <>
@@ -130,8 +130,8 @@ const YouTubeModal: React.FC<YouTubeModalProps> = ({ post, videoUrl, onClose, on
                       </div>
                   </div>
                   <div>
-                      <label htmlFor="yt-tags" className="block text-sm font-medium text-slate-300 mb-1">Tags (comma-separated)</label>
-                      <input type="text" id="yt-tags" value={aiContent.tags.join(', ')} onChange={(e) => handleContentChange('tags', e.target.value.split(',').map(t => t.trim()))} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none focus:border-indigo-500 transition-colors" />
+                      <label htmlFor="yt-tags" className="block text-sm font-medium text-slate-300 mb-1">Tags</label>
+                      <input type="text" id="yt-tags" value={aiContent.tags.map(tag => `#${tag}`).join(' ')} onChange={(e) => handleContentChange('tags', e.target.value.replace(/#/g, '').split(' ').map(t => t.trim()))} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none focus:border-indigo-500 transition-colors" />
                   </div>
               </div>
           )}
