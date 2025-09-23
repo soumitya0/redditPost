@@ -15,6 +15,7 @@ const formatNumber = (num: number): string => {
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
+  const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -58,6 +59,51 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const videoUrl = post.is_video && post.media?.reddit_video ? post.media.reddit_video.fallback_url : null;
   const downloadableUrl = videoUrl || imageUrl;
 
+  const proceedWithVideoDownload = async () => {
+    setShowDownloadConfirm(false);
+    if (!videoUrl) return;
+
+    const redditPostUrl = `https://www.reddit.com${post.permalink}`;
+    const dashUrl = post.media?.reddit_video?.dash_url;
+    
+    // Attempt to parse DASH manifest for high-quality, reliable download with audio
+    if (dashUrl) {
+      try {
+        const response = await fetch(dashUrl);
+        const manifestText = await response.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(manifestText, "application/xml");
+
+        // Find the highest quality video stream by bandwidth
+        const videoSet = Array.from(xmlDoc.getElementsByTagName('AdaptationSet')).find(set => set.getAttribute('contentType') === 'video/mp4');
+        const videoReps = videoSet ? Array.from(videoSet.getElementsByTagName('Representation')) : [];
+        videoReps.sort((a, b) => parseInt(b.getAttribute('bandwidth') || '0', 10) - parseInt(a.getAttribute('bandwidth') || '0', 10));
+        const videoBaseUrl = videoReps.length > 0 ? videoReps[0].getElementsByTagName('BaseURL')[0]?.textContent : null;
+
+        // Find the audio stream
+        const audioSet = Array.from(xmlDoc.getElementsByTagName('AdaptationSet')).find(set => set.getAttribute('contentType') === 'audio/mp4');
+        const audioBaseUrl = audioSet ? audioSet.getElementsByTagName('BaseURL')[0]?.textContent : null;
+
+        if (videoBaseUrl && audioBaseUrl) {
+          const baseUrlPath = dashUrl.substring(0, dashUrl.lastIndexOf('/') + 1);
+          const fullVideoUrl = baseUrlPath + videoBaseUrl;
+          const fullAudioUrl = baseUrlPath + audioBaseUrl;
+          
+          // Use redditsave.com as it can take direct audio/video stream URLs for merging
+          const downloaderServiceUrl = `https://sd.redditsave.com/download.php?permalink=${encodeURIComponent(redditPostUrl)}&video_url=${encodeURIComponent(fullVideoUrl)}&audio_url=${encodeURIComponent(fullAudioUrl)}`;
+          window.open(downloaderServiceUrl, '_blank', 'noopener,noreferrer');
+          return;
+        }
+      } catch (error) {
+        console.error("Failed to parse DASH manifest, using fallback downloader:", error);
+      }
+    }
+
+    // Fallback method if DASH parsing fails or is not available
+    const fallbackDownloaderUrl = `https://rapidsave.com/?url=${encodeURIComponent(redditPostUrl)}`;
+    window.open(fallbackDownloaderUrl, '_blank', 'noopener,noreferrer');
+  };
+
   const handleDownload = async (e?: React.MouseEvent<HTMLButtonElement>) => {
     if (e) {
       e.preventDefault();
@@ -66,11 +112,9 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
     if (!downloadableUrl) return;
 
-    // For Reddit videos, use a third-party service that correctly merges audio and video streams.
+    // For videos, show a confirmation modal before redirecting
     if (videoUrl) {
-      const redditPostUrl = `https://www.reddit.com${post.permalink}`;
-      const downloaderServiceUrl = `https://rapidsave.com/?url=${encodeURIComponent(redditPostUrl)}`;
-      window.open(downloaderServiceUrl, '_blank', 'noopener,noreferrer');
+      setShowDownloadConfirm(true);
       return;
     }
 
@@ -167,6 +211,46 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     );
   };
 
+  const DownloadConfirmationModal = () => {
+    if (!showDownloadConfirm) return null;
+
+    return (
+      <div
+        className="fixed inset-0 bg-black/70 z-50 flex justify-center items-center p-4"
+        onClick={() => setShowDownloadConfirm(false)}
+        aria-modal="true"
+        role="dialog"
+      >
+        <div
+          className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-md border border-slate-700"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <header className="p-4 border-b border-slate-700">
+            <h2 className="text-lg font-bold text-slate-100 flex items-center space-x-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <span>Video Download Notice</span>
+            </h2>
+          </header>
+          <div className="p-6 space-y-3">
+            <p className="text-slate-300">To download this video with sound, we need to open a specialized download service in a new tab.</p>
+            <p className="text-slate-400 text-sm">This is because Reddit provides video and audio as separate files, and this service will combine them for you.</p>
+          </div>
+          <footer className="p-4 bg-slate-900/50 rounded-b-xl flex justify-end items-center space-x-3">
+            <button onClick={() => setShowDownloadConfirm(false)} className="px-4 py-2 text-sm font-semibold bg-slate-600 hover:bg-slate-500 rounded-md transition-colors">
+              Cancel
+            </button>
+            <button onClick={proceedWithVideoDownload} className="px-5 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 rounded-md transition-colors">
+              Continue
+            </button>
+          </footer>
+        </div>
+      </div>
+    );
+  };
+
+
   return (
     <>
       <a
@@ -229,11 +313,12 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           </div>
         </div>
       </a>
+      <DownloadConfirmationModal />
       {isYouTubeModalOpen && videoUrl && (
         <YouTubeModal
           post={post}
           onClose={() => setIsYouTubeModalOpen(false)}
-          onConfirm={handleDownload}
+          onConfirm={() => handleDownload()}
           videoUrl={videoUrl}
         />
       )}
