@@ -5,7 +5,7 @@ import PostCard from './components/PostCard';
 import Header from './components/Header';
 import LoadingSpinner from './components/LoadingSpinner';
 
-const SUBREDDITS = ['IndianCivicFails', 'IdiotsInCars', 'roadrage', 'dashcamgifs'];
+const SUBREDDITS = ['IndianCivicFails', 'PublicFreakoutDesi', 'roadrage', 'dashcamgifs'];
 
 const App: React.FC = () => {
   const [posts, setPosts] = useState<RedditPost[]>([]);
