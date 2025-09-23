@@ -1,87 +1,42 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { RedditPost } from "./types";
-import PostCard from "./components/PostCard";
-import Header from "./components/Header";
-import LoadingSpinner from "./components/LoadingSpinner";
 
-const SUBREDDITS = [
-  "IndianCivicFails",
-  "IdiotsInCars",
-  "roadrage",
-  "dashcamgifs",
-];
-type SortByType = "hot" | "top" | "new";
+import React, { useState, useEffect, useCallback } from 'react';
+import { RedditPost } from './types';
+import PostCard from './components/PostCard';
+import Header from './components/Header';
+import LoadingSpinner from './components/LoadingSpinner';
+
+const SUBREDDITS = ['IndianCivicFails', 'IdiotsInCars', 'roadrage', 'dashcamgifs'];
 
 const App: React.FC = () => {
   const [posts, setPosts] = useState<RedditPost[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [subreddit, setSubreddit] = useState<string>(SUBREDDITS[0]);
-  const [sortBy, setSortBy] = useState<SortByType>("hot");
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Try our Vercel API first
-      let apiEndpoint = `/api/reddit/${subreddit}?sort=${sortBy}&limit=50&_=${Date.now()}`;
-      let response = await fetch(apiEndpoint, { cache: "no-store" });
-
-      // If our API fails, try public CORS proxy as fallback
+      const response = await fetch(`https://www.reddit.com/r/${subreddit}/new.json?limit=50`);
       if (!response.ok) {
-        console.log("Primary API failed, trying CORS proxy fallback...");
-        const redditUrl = `https://www.reddit.com/r/${subreddit}/${sortBy}.json?limit=50`;
-        const corsProxy = `https://api.allorigins.win/get?url=${encodeURIComponent(
-          redditUrl
-        )}`;
-
-        response = await fetch(corsProxy, { cache: "no-store" });
-
-        if (response.ok) {
-          const proxyData = await response.json();
-          const data = JSON.parse(proxyData.contents);
-          const fetchedPosts = data.data.children.map(
-            (child: any) => child.data
-          );
-          setPosts(fetchedPosts);
-          return;
+        if (response.status === 404) {
+          throw new Error(`Subreddit 'r/${subreddit}' not found or is private.`);
         }
+        throw new Error(`Failed to fetch: ${response.statusText} (${response.status})`);
       }
-
-      // If direct API works
-      if (response.ok) {
-        const data = await response.json();
-        const fetchedPosts = data.data.children.map((child: any) => child.data);
-        setPosts(fetchedPosts);
-        return;
-      }
-
-      // Handle errors
-      const errorData = await response.json().catch(() => ({}));
-
-      if (response.status === 404) {
-        throw new Error(`Subreddit 'r/${subreddit}' not found or is private.`);
-      }
-      if (response.status === 403) {
-        throw new Error(
-          errorData.details ||
-            "Reddit is temporarily blocking requests. Trying alternative method..."
-        );
-      }
-      throw new Error(
-        errorData.details ||
-          `Failed to fetch: ${response.statusText} (${response.status})`
-      );
+      const data = await response.json();
+      const fetchedPosts = data.data.children.map((child: any) => child.data);
+      setPosts(fetchedPosts);
     } catch (e) {
       if (e instanceof Error) {
         setError(e.message);
       } else {
-        setError("An unknown error occurred.");
+        setError('An unknown error occurred.');
       }
     } finally {
       setLoading(false);
     }
-  }, [subreddit, sortBy]);
+  }, [subreddit]);
 
   useEffect(() => {
     fetchPosts();
@@ -91,12 +46,7 @@ const App: React.FC = () => {
     setPosts([]); // Clear posts to show loading spinner immediately
     setSubreddit(newSubreddit);
   };
-
-  const handleSortChange = (newSort: SortByType) => {
-    setPosts([]);
-    setSortBy(newSort);
-  };
-
+  
   const renderContent = () => {
     if (loading) {
       return (
@@ -111,11 +61,6 @@ const App: React.FC = () => {
         <div className="text-center text-red-400 bg-red-900/20 p-4 rounded-lg">
           <p className="font-bold text-lg">Oops! Something went wrong.</p>
           <p>{error}</p>
-          <p className="mt-2 text-sm text-slate-300">
-            Note: When the DevTools Network tab is open (Disable cache), it
-            works. This is likely a browser caching/CORS quirk. A server proxy
-            is enabled here to avoid that.
-          </p>
           <button
             onClick={fetchPosts}
             className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-md font-semibold transition-colors"
@@ -127,11 +72,7 @@ const App: React.FC = () => {
     }
 
     if (posts.length === 0) {
-      return (
-        <p className="text-center text-slate-400">
-          No posts found in r/{subreddit}.
-        </p>
-      );
+      return <p className="text-center text-slate-400">No posts found in r/{subreddit}.</p>;
     }
 
     return (
@@ -149,10 +90,10 @@ const App: React.FC = () => {
         subreddits={SUBREDDITS}
         currentSubreddit={subreddit}
         onSubredditChange={handleSubredditChange}
-        currentSort={sortBy}
-        onSortChange={handleSortChange}
       />
-      <main className="container mx-auto px-4 py-8">{renderContent()}</main>
+      <main className="container mx-auto px-4 py-8">
+        {renderContent()}
+      </main>
       <footer className="text-center py-6 text-slate-500 text-sm">
         <p>Built for viewing Reddit. Not affiliated with Reddit.</p>
       </footer>

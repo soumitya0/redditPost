@@ -1,22 +1,17 @@
 {
-  "name": "reddit-fails-viewer",
+  "name": "reddit-fails-viewer-final",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:production": "rm -rf node_modules package-lock.json && npm install && npm run build",
-    "preview": "vite preview",
-    "serve": "node server.js",
-    "server": "node server.js"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^1.20.0",
-    "express": "^5.1.0",
-    "node-fetch": "^3.3.2",
+    "react-dom": "^19.1.1",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "@google/genai": "^1.20.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

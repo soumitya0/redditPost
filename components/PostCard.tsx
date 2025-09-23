@@ -17,7 +17,10 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
 
-  const imageUrl = post.preview?.images[0]?.resolutions[post.preview.images[0].resolutions.length - 1]?.url.replace(/&amp;/g, '&');
+  const resolutions = post.preview?.images[0]?.resolutions;
+  const lastResolution = resolutions && resolutions.length > 0 ? resolutions[resolutions.length - 1] : null;
+  const imageUrl = lastResolution?.url?.replace(/&amp;/g, '&');
+  
   const videoUrl = post.is_video && post.media?.reddit_video ? post.media.reddit_video.fallback_url : null;
   const downloadableUrl = videoUrl || imageUrl;
 

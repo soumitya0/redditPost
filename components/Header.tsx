@@ -1,18 +1,13 @@
 import React, { useState, FormEvent } from 'react';
 
-type SortByType = 'hot' | 'top' | 'new';
-
 interface HeaderProps {
     subreddits: string[];
     currentSubreddit: string;
     onSubredditChange: (subreddit: string) => void;
-    currentSort: SortByType;
-    onSortChange: (sort: SortByType) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ subreddits, currentSubreddit, onSubredditChange, currentSort, onSortChange }) => {
+const Header: React.FC<HeaderProps> = ({ subreddits, currentSubreddit, onSubredditChange }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const SORTS: SortByType[] = ['hot', 'new', 'top'];
 
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -33,7 +28,7 @@ const Header: React.FC<HeaderProps> = ({ subreddits, currentSubreddit, onSubredd
         <div className="flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center space-x-3 min-w-0">
             <svg
-              xmlns="http://www.w.org/2000/svg"
+              xmlns="http://www.w3.org/2000/svg"
               className="h-8 w-8 text-indigo-400 flex-shrink-0"
               viewBox="0 0 24 24"
               fill="none"
@@ -80,23 +75,6 @@ const Header: React.FC<HeaderProps> = ({ subreddits, currentSubreddit, onSubredd
                         aria-pressed={currentSubreddit === subreddit}
                     >
                         r/{subreddit}
-                    </button>
-                ))}
-            </nav>
-            <div className="h-6 w-px bg-slate-700 hidden sm:block"></div>
-             <nav className="flex items-center space-x-2 pb-2">
-                {SORTS.map((sort) => (
-                    <button
-                        key={sort}
-                        onClick={() => onSortChange(sort)}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors capitalize ${
-                             currentSort === sort
-                            ? 'bg-slate-200 text-slate-900 shadow'
-                            : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
-                        }`}
-                        aria-pressed={currentSort === sort}
-                    >
-                        {sort}
                     </button>
                 ))}
             </nav>
