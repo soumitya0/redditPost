@@ -1,13 +1,17 @@
+
 import React, { useState, FormEvent } from 'react';
 
 interface HeaderProps {
     subreddits: string[];
     currentSubreddit: string;
     onSubredditChange: (subreddit: string) => void;
+    currentSort: string;
+    onSortChange: (sort: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ subreddits, currentSubreddit, onSubredditChange }) => {
+const Header: React.FC<HeaderProps> = ({ subreddits, currentSubreddit, onSubredditChange, currentSort, onSortChange }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const SORTS = ['hot', 'new', 'top'];
 
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -28,7 +32,7 @@ const Header: React.FC<HeaderProps> = ({ subreddits, currentSubreddit, onSubredd
         <div className="flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center space-x-3 min-w-0">
             <svg
-              xmlns="http://www.w3.org/2000/svg"
+              xmlns="http://www.w.org/2000/svg"
               className="h-8 w-8 text-indigo-400 flex-shrink-0"
               viewBox="0 0 24 24"
               fill="none"
@@ -61,7 +65,7 @@ const Header: React.FC<HeaderProps> = ({ subreddits, currentSubreddit, onSubredd
             </button>
           </form>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <nav className="flex items-center space-x-2 overflow-x-auto pb-2">
                 {subreddits.map((subreddit) => (
                     <button
@@ -78,6 +82,22 @@ const Header: React.FC<HeaderProps> = ({ subreddits, currentSubreddit, onSubredd
                     </button>
                 ))}
             </nav>
+            <div className="flex items-center space-x-2 border-l border-slate-700 pl-4 pb-2">
+              {SORTS.map((sort) => (
+                <button
+                  key={sort}
+                  onClick={() => onSortChange(sort)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap capitalize ${
+                    currentSort === sort
+                      ? 'bg-slate-600 text-white'
+                      : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+                  }`}
+                  aria-pressed={currentSort === sort}
+                >
+                  {sort}
+                </button>
+              ))}
+            </div>
         </div>
       </div>
     </header>
