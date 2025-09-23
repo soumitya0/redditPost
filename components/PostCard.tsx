@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { RedditPost } from '../types';
 import YouTubeModal from './YouTubeModal';
 
@@ -14,8 +14,42 @@ const formatNumber = (num: number): string => {
 };
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
-  const [isDownloading, setIsDownloading] = useState(false);
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    let hls: any | null = null;
+    
+    // Logic to attach HLS.js player for videos with sound
+    if (post.is_video && post.media?.reddit_video && !post.media.reddit_video.is_gif && videoRef.current) {
+      const video = videoRef.current;
+      const hlsUrl = post.media.reddit_video.hls_url;
+      const fallbackUrl = post.media.reddit_video.fallback_url;
+      const Hls = (window as any).Hls;
+
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native HLS support (e.g., Safari)
+        video.src = hlsUrl;
+      } else if (Hls && Hls.isSupported()) {
+        // Use hls.js for other browsers to enable audio
+        hls = new Hls();
+        hls.loadSource(hlsUrl);
+        hls.attachMedia(video);
+      } else {
+        // Fallback for browsers with no HLS support at all (will likely be without audio)
+        console.error("HLS not supported, falling back to video without audio.");
+        video.src = fallbackUrl;
+      }
+    }
+    
+    // Cleanup function to destroy hls instance when component unmounts
+    return () => {
+      if (hls) {
+        hls.destroy();
+      }
+    };
+  }, [post]);
+
 
   const resolutions = post.preview?.images[0]?.resolutions;
   const lastResolution = resolutions && resolutions.length > 0 ? resolutions[resolutions.length - 1] : null;
@@ -30,9 +64,17 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       e.stopPropagation();
     }
 
-    if (!downloadableUrl || isDownloading) return;
+    if (!downloadableUrl) return;
 
-    setIsDownloading(true);
+    // For Reddit videos, use a third-party service that correctly merges audio and video streams.
+    if (videoUrl) {
+      const redditPostUrl = `https://www.reddit.com${post.permalink}`;
+      const downloaderServiceUrl = `https://rapidsave.com/?url=${encodeURIComponent(redditPostUrl)}`;
+      window.open(downloaderServiceUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    // For images, use the original direct download logic.
     try {
       const response = await fetch(downloadableUrl);
       if (!response.ok) {
@@ -45,7 +87,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       a.href = url;
       
       const urlPath = new URL(downloadableUrl).pathname;
-      const fileExtension = urlPath.substring(urlPath.lastIndexOf('.')) || (videoUrl ? '.mp4' : '.jpg');
+      const fileExtension = urlPath.substring(urlPath.lastIndexOf('.')) || '.jpg';
       a.download = `${post.id}${fileExtension}`;
       
       document.body.appendChild(a);
@@ -56,8 +98,6 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
       console.error("Download failed:", error);
       alert("Could not download automatically. The media will open in a new tab for you to save manually.");
       window.open(downloadableUrl, '_blank');
-    } finally {
-      setIsDownloading(false);
     }
   };
   
@@ -71,17 +111,42 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
   const renderMedia = () => {
     if (post.is_video && post.media?.reddit_video) {
-        return (
-            <video 
-                className="w-full h-full object-cover"
+        const isGif = post.media.reddit_video.is_gif;
+        
+        if (isGif) {
+          // Render GIFs as looping, muted videos without controls
+          return (
+            <div className="relative w-full h-full">
+              <video 
+                className="w-full h-full object-cover bg-black"
                 poster={post.thumbnail}
-                controls
                 preload="metadata"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            >
-                <source src={post.media.reddit_video.fallback_url} type="video/mp4" />
-                Your browser does not support the video tag.
-            </video>
+                loop
+                muted
+                autoPlay
+                playsInline
+                src={post.media.reddit_video.fallback_url}
+              />
+              <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs font-bold py-1 px-2 rounded">
+                GIF
+              </div>
+            </div>
+          );
+        }
+        
+        // For actual videos, use the ref and useEffect will attach the HLS source with audio
+        return (
+          <video 
+            ref={videoRef}
+            className="w-full h-full object-cover bg-black"
+            poster={post.thumbnail}
+            controls
+            preload="metadata"
+            playsInline
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          >
+            Your browser does not support the video tag.
+          </video>
         );
     }
     
@@ -151,21 +216,13 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
               {downloadableUrl && (
                 <button
                     onClick={handleDownload}
-                    disabled={isDownloading}
-                    className="flex items-center justify-center w-10 h-8 rounded-md bg-[#4FB7B3] text-white font-semibold text-xs hover:bg-opacity-90 transition-all disabled:bg-slate-600 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center w-10 h-8 rounded-md bg-[#4FB7B3] text-white font-semibold text-xs hover:bg-opacity-90 transition-all"
                     aria-label="Download media"
                     title="Download media"
                 >
-                    {isDownloading ? (
-                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                    ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                    )}
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
                 </button>
               )}
             </div>
