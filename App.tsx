@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { RedditPost } from './types';
 import PostCard from './components/PostCard';
 import Header from './components/Header';
@@ -13,43 +13,76 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [subreddit, setSubreddit] = useState<string>(SUBREDDITS[0]);
   const [sort, setSort] = useState<string>('new');
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchPosts = useCallback(async () => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+    const { signal } = abortControllerRef.current;
+
     setLoading(true);
     setError(null);
+    setPosts([]); // Clear posts for new fetch
+
     try {
-      const response = await fetch(`https://www.reddit.com/r/${subreddit}/${sort}.json?limit=50`);
+      const url = `https://www.reddit.com/r/${subreddit}/${sort}.json?limit=50&raw_json=1`;
+      const response = await fetch(url, { 
+        signal,
+        cache: 'no-cache'
+      });
+
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error(`Subreddit 'r/${subreddit}' not found or is private.`);
         }
-        throw new Error(`Failed to fetch: ${response.statusText} (${response.status})`);
+        throw new Error(`Failed to fetch from Reddit: ${response.statusText} (${response.status})`);
       }
-      const data = await response.json();
+
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("Failed to parse JSON response from Reddit:", parseError, "\nResponse text:", responseText);
+        throw new Error("Received an invalid response from Reddit. The API might be temporarily unavailable or blocking requests.");
+      }
+
+      if (!data?.data?.children) {
+        console.error("Unexpected JSON structure from Reddit API:", data);
+        throw new Error("Received an unexpected data format from Reddit.");
+      }
+
       const fetchedPosts = data.data.children.map((child: any) => child.data);
       setPosts(fetchedPosts);
     } catch (e) {
       if (e instanceof Error) {
+        if (e.name === 'AbortError') {
+          console.log('Fetch aborted.');
+          return; // Don't set error for aborted requests
+        }
         setError(e.message);
       } else {
         setError('An unknown error occurred.');
       }
     } finally {
-      setLoading(false);
+      if (!signal.aborted) {
+        setLoading(false);
+      }
     }
   }, [subreddit, sort]);
 
   useEffect(() => {
     fetchPosts();
+    return () => {
+      abortControllerRef.current?.abort();
+    };
   }, [fetchPosts]);
 
   const handleSubredditChange = (newSubreddit: string) => {
-    setPosts([]); // Clear posts to show loading spinner immediately
     setSubreddit(newSubreddit);
   };
   
   const handleSortChange = (newSort: string) => {
-    setPosts([]);
     setSort(newSort);
   };
 
