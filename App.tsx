@@ -13,6 +13,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [subreddit, setSubreddit] = useState<string>(SUBREDDITS[0]);
   const [sort, setSort] = useState<string>('new');
+  const [activeSearchQuery, setActiveSearchQuery] = useState<string>('');
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchPosts = useCallback(async () => {
@@ -25,14 +26,20 @@ const App: React.FC = () => {
     setPosts([]); // Clear posts for new fetch
 
     try {
-      const url = `https://www.reddit.com/r/${subreddit}/${sort}.json?limit=50&raw_json=1`;
+      let url = '';
+      if (activeSearchQuery) {
+        url = `https://www.reddit.com/search.json?q=${encodeURIComponent(activeSearchQuery)}&sort=${sort}&limit=50&raw_json=1`;
+      } else {
+        url = `https://www.reddit.com/r/${subreddit}/${sort}.json?limit=50&raw_json=1`;
+      }
+
       const response = await fetch(url, { 
         signal,
         cache: 'no-cache'
       });
 
       if (!response.ok) {
-        if (response.status === 404) {
+        if (response.status === 404 && !activeSearchQuery) {
           throw new Error(`Subreddit 'r/${subreddit}' not found or is private.`);
         }
         throw new Error(`Failed to fetch from Reddit: ${response.statusText} (${response.status})`);
@@ -69,7 +76,7 @@ const App: React.FC = () => {
         setLoading(false);
       }
     }
-  }, [subreddit, sort]);
+  }, [subreddit, sort, activeSearchQuery]);
 
   useEffect(() => {
     fetchPosts();
@@ -79,11 +86,16 @@ const App: React.FC = () => {
   }, [fetchPosts]);
 
   const handleSubredditChange = (newSubreddit: string) => {
+    setActiveSearchQuery('');
     setSubreddit(newSubreddit);
   };
   
   const handleSortChange = (newSort: string) => {
     setSort(newSort);
+  };
+
+  const handleGlobalSearch = (query: string) => {
+    setActiveSearchQuery(query);
   };
 
   const renderContent = () => {
@@ -111,7 +123,10 @@ const App: React.FC = () => {
     }
 
     if (posts.length === 0) {
-      return <p className="text-center text-slate-400">No posts found in r/{subreddit}.</p>;
+      const message = activeSearchQuery
+        ? `No posts found for your search: "${activeSearchQuery}"`
+        : `No posts found in r/${subreddit}.`;
+      return <p className="text-center text-slate-400">{message}</p>;
     }
 
     return (
@@ -131,6 +146,8 @@ const App: React.FC = () => {
         onSubredditChange={handleSubredditChange}
         currentSort={sort}
         onSortChange={handleSortChange}
+        activeSearchQuery={activeSearchQuery}
+        onGlobalSearch={handleGlobalSearch}
       />
       <main className="container mx-auto px-4 py-8">
         {renderContent()}
