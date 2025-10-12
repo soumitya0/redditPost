@@ -13,6 +13,10 @@ const SUBREDDIT_GROUPS = [
   {
     title: 'Animals',
     channels: ['cats', 'aww', 'Catswhoyell', 'pandas', 'bear', 'BearCubGIFs', 'bearsdoinghumanthings']
+  },
+  {
+    title: 'Food & Fun',
+    channels: ['StupidFood']
   }
 ];
 
