@@ -26,7 +26,18 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const [subredditSearchTerm, setSubredditSearchTerm] = useState('');
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
-  
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    // By default, expand the first group and collapse the others.
+    const initialState: Record<string, boolean> = {};
+    if (subredditGroups.length > 0) {
+      initialState[subredditGroups[0].title] = true;
+    }
+    subredditGroups.slice(1).forEach(group => {
+      initialState[group.title] = false;
+    });
+    return initialState;
+  });
+
   const BROWSE_SORTS = ['hot', 'new', 'top', 'videos'];
   const SEARCH_SORTS = ['relevance', 'hot', 'top', 'new', 'comments'];
   const SORTS = activeSearchQuery ? SEARCH_SORTS : BROWSE_SORTS;
@@ -57,6 +68,13 @@ const Header: React.FC<HeaderProps> = ({
   const isSubredditActive = (subreddit: string) => {
       return currentSubreddit === subreddit && !activeSearchQuery;
   }
+  
+  const toggleGroup = (title: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [title]: !prev[title]
+    }));
+  };
 
   return (
     <header className="bg-slate-900/70 backdrop-blur-lg sticky top-0 z-50 border-b border-slate-700">
@@ -114,28 +132,45 @@ const Header: React.FC<HeaderProps> = ({
           </form>
         <div className="space-y-4">
           {/* Subreddit Groups */}
-          <div className="space-y-3">
-            {subredditGroups.map((group) => (
+          <div className="space-y-1">
+            {subredditGroups.map((group) => {
+              const isExpanded = !!expandedGroups[group.title];
+              return (
               <div key={group.title}>
-                <h3 className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-2 px-1">{group.title}</h3>
-                <nav className="flex items-center gap-2 flex-wrap">
-                  {group.channels.map((subreddit) => (
-                    <button
-                      key={subreddit}
-                      onClick={() => handlePresetClick(subreddit)}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
-                        isSubredditActive(subreddit)
-                          ? 'bg-indigo-600 text-white shadow-md'
-                          : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
-                      }`}
-                      aria-pressed={isSubredditActive(subreddit)}
-                    >
-                      r/{subreddit}
-                    </button>
-                  ))}
-                </nav>
+                <button
+                  onClick={() => toggleGroup(group.title)}
+                  className="flex justify-between items-center w-full px-2 py-1.5 rounded-md hover:bg-slate-800 transition-colors group"
+                  aria-expanded={isExpanded}
+                  aria-controls={`group-${group.title.replace(/\s+/g, '-')}`}
+                >
+                  <h3 className="text-xs font-bold uppercase text-slate-400 tracking-wider group-hover:text-slate-200 transition-colors">{group.title}</h3>
+                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 text-slate-500 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div
+                    id={`group-${group.title.replace(/\s+/g, '-')}`}
+                    className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-96' : 'max-h-0'}`}
+                >
+                    <nav className="flex items-center gap-2 flex-wrap pt-2 pb-2 pl-2">
+                    {group.channels.map((subreddit) => (
+                        <button
+                        key={subreddit}
+                        onClick={() => handlePresetClick(subreddit)}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
+                            isSubredditActive(subreddit)
+                            ? 'bg-indigo-600 text-white shadow-md'
+                            : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+                        }`}
+                        aria-pressed={isSubredditActive(subreddit)}
+                        >
+                        r/{subreddit}
+                        </button>
+                    ))}
+                    </nav>
+                </div>
               </div>
-            ))}
+            )})}
           </div>
 
           {/* Sort Controls */}
