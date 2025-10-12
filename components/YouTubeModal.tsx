@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { RedditPost } from '../types';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -172,7 +173,7 @@ Your task is to determine the following:
       setAiContent(prev => prev ? {...prev, [field]: value} : null);
   }
 
-  const fullDescription = aiContent ? `${aiContent.description}\n\nHashtags:\n${aiContent.tags.map(t => `#${t.replace(/\s+/g, '')}`).join(' ')} #India #CivicFails #indianCivis` : '';
+  const fullDescription = aiContent ? `${aiContent.description}\n\nHashtags:\n${aiContent.tags.map(t => `#${t.replace(/\s+/g, '')}`).join(' ')}` : '';
 
   const getRiskColorClasses = (risk: 'Low' | 'Medium' | 'High' | undefined) => {
     switch (risk) {

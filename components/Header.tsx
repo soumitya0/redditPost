@@ -1,8 +1,13 @@
 
 import React, { useState, FormEvent } from 'react';
 
+interface SubredditGroup {
+  title: string;
+  channels: string[];
+}
+
 interface HeaderProps {
-    subreddits: string[];
+    subredditGroups: SubredditGroup[];
     currentSubreddit: string;
     onSubredditChange: (subreddit: string) => void;
     currentSort: string;
@@ -12,7 +17,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-    subreddits, 
+    subredditGroups, 
     currentSubreddit, 
     onSubredditChange, 
     currentSort, 
@@ -105,24 +110,36 @@ const Header: React.FC<HeaderProps> = ({
               </svg>
             </button>
           </form>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <nav className="flex items-center space-x-2 overflow-x-auto pb-2">
-                {subreddits.map((subreddit) => (
+        <div className="space-y-4">
+          {/* Subreddit Groups */}
+          <div className="space-y-3">
+            {subredditGroups.map((group) => (
+              <div key={group.title}>
+                <h3 className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-2 px-1">{group.title}</h3>
+                <nav className="flex items-center gap-2 flex-wrap">
+                  {group.channels.map((subreddit) => (
                     <button
-                        key={subreddit}
-                        onClick={() => handlePresetClick(subreddit)}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
-                            isSubredditActive(subreddit)
-                            ? 'bg-indigo-600 text-white shadow-md'
-                            : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
-                        }`}
-                        aria-pressed={isSubredditActive(subreddit)}
+                      key={subreddit}
+                      onClick={() => handlePresetClick(subreddit)}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
+                        isSubredditActive(subreddit)
+                          ? 'bg-indigo-600 text-white shadow-md'
+                          : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+                      }`}
+                      aria-pressed={isSubredditActive(subreddit)}
                     >
-                        r/{subreddit}
+                      r/{subreddit}
                     </button>
-                ))}
-            </nav>
-            <div className="flex items-center space-x-2 border-l border-slate-700 pl-4 pb-2">
+                  ))}
+                </nav>
+              </div>
+            ))}
+          </div>
+
+          {/* Sort Controls */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-700 pt-3">
+            <span className="text-sm font-semibold text-slate-400">Sort by:</span>
+            <div className="flex items-center flex-wrap gap-2">
               {SORTS.map((sort) => (
                 <button
                   key={sort}
@@ -138,6 +155,7 @@ const Header: React.FC<HeaderProps> = ({
                 </button>
               ))}
             </div>
+          </div>
         </div>
       </div>
     </header>

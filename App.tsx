@@ -5,13 +5,23 @@ import PostCard from './components/PostCard';
 import Header from './components/Header';
 import LoadingSpinner from './components/LoadingSpinner';
 
-const SUBREDDITS = ['IndianCivicFails', 'PublicFreakoutDesi', 'NewDelhi', 'dashcamgifs'];
+const SUBREDDIT_GROUPS = [
+  {
+    title: 'Japanese Culture & Life',
+    channels: ['newsokur', 'japanlife', 'japanpics', 'anime', 'manga', 'JapaneseFood', 'ramen', 'ghibli', 'tokyo']
+  },
+  {
+    title: 'Animals',
+    channels: ['cats', 'aww', 'Catswhoyell', 'pandas', 'bear', 'BearCubGIFs', 'bearsdoinghumanthings']
+  }
+];
+
 
 const App: React.FC = () => {
   const [posts, setPosts] = useState<RedditPost[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [subreddit, setSubreddit] = useState<string>(SUBREDDITS[0]);
+  const [subreddit, setSubreddit] = useState<string>(SUBREDDIT_GROUPS[0].channels[0]);
   const [sort, setSort] = useState<string>('new');
   const [activeSearchQuery, setActiveSearchQuery] = useState<string>('');
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -141,7 +151,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 font-sans">
       <Header
-        subreddits={SUBREDDITS}
+        subredditGroups={SUBREDDIT_GROUPS}
         currentSubreddit={subreddit}
         onSubredditChange={handleSubredditChange}
         currentSort={sort}

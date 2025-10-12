@@ -5,7 +5,7 @@ interface LoadingSpinnerProps {
     text?: string;
 }
 
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ text = "Fetching latest fails..." }) => {
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ text = "Fetching latest posts..." }) => {
   return (
     <div className="flex flex-col items-center justify-center space-y-2">
       <svg
