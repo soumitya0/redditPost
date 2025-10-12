@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { RedditPost } from './types';
 import PostCard from './components/PostCard';
@@ -26,7 +25,7 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [subreddit, setSubreddit] = useState<string>(SUBREDDIT_GROUPS[0].channels[0]);
-  const [sort, setSort] = useState<string>('new');
+  const [sort, setSort] = useState<string>('hot');
   const [activeSearchQuery, setActiveSearchQuery] = useState<string>('');
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -43,6 +42,8 @@ const App: React.FC = () => {
       let url = '';
       if (activeSearchQuery) {
         url = `https://www.reddit.com/search.json?q=${encodeURIComponent(activeSearchQuery)}&sort=${sort}&limit=50&raw_json=1`;
+      } else if (sort === 'videos') {
+        url = `https://www.reddit.com/r/${subreddit}/search.json?q=site%3Av.redd.it&restrict_sr=on&sort=new&limit=50&raw_json=1`;
       } else {
         url = `https://www.reddit.com/r/${subreddit}/${sort}.json?limit=50&raw_json=1`;
       }
@@ -102,6 +103,10 @@ const App: React.FC = () => {
   const handleSubredditChange = (newSubreddit: string) => {
     setActiveSearchQuery('');
     setSubreddit(newSubreddit);
+    // When clearing search, ensure sort is valid for subreddit browsing
+    if (sort === 'relevance' || sort === 'comments') {
+        setSort('hot');
+    }
   };
   
   const handleSortChange = (newSort: string) => {
@@ -110,6 +115,10 @@ const App: React.FC = () => {
 
   const handleGlobalSearch = (query: string) => {
     setActiveSearchQuery(query);
+    // When starting a new search, ensure sort is valid for searching
+    if (sort === 'videos') {
+        setSort('relevance');
+    }
   };
 
   const renderContent = () => {

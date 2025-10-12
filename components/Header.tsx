@@ -1,4 +1,3 @@
-
 import React, { useState, FormEvent } from 'react';
 
 interface SubredditGroup {
@@ -27,7 +26,10 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const [subredditSearchTerm, setSubredditSearchTerm] = useState('');
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
-  const SORTS = ['relevance', 'hot', 'top', 'new', 'comments'];
+  
+  const BROWSE_SORTS = ['hot', 'new', 'top', 'videos'];
+  const SEARCH_SORTS = ['relevance', 'hot', 'top', 'new', 'comments'];
+  const SORTS = activeSearchQuery ? SEARCH_SORTS : BROWSE_SORTS;
 
   const handleSubredditSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
