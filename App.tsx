@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { RedditPost } from './types';
 import PostCard from './components/PostCard';
@@ -14,8 +15,16 @@ const SUBREDDIT_GROUPS = [
     channels: ['cats', 'aww', 'Catswhoyell', 'pandas', 'bear', 'BearCubGIFs', 'bearsdoinghumanthings']
   },
   {
-    title: 'Food & Fun',
-    channels: ['StupidFood']
+    title: 'Food',
+    channels: ['StupidFood', 'KoreanFood', 'chinesefood']
+  },
+  {
+    title: 'Creative & Amazing',
+    channels: ['BeAmazed', 'nextfuckinglevel', 'SipsTea']
+  },
+  {
+    title: 'Calm Night',
+    channels: ['TheNightFeeling']
   }
 ];
 
