@@ -19,6 +19,10 @@ const SUBREDDIT_GROUPS = [
     channels: ['StupidFood', 'KoreanFood', 'chinesefood']
   },
   {
+    title: 'Gaming',
+    channels: ['gaming', 'Games', 'pcgaming', 'playstation', 'xbox', 'nintendo']
+  },
+  {
     title: 'Creative & Amazing',
     channels: ['BeAmazed', 'nextfuckinglevel', 'SipsTea']
   },
@@ -36,6 +40,7 @@ const App: React.FC = () => {
   const [subreddit, setSubreddit] = useState<string>(SUBREDDIT_GROUPS[0].channels[0]);
   const [sort, setSort] = useState<string>('hot');
   const [activeSearchQuery, setActiveSearchQuery] = useState<string>('');
+  const [activePostUrl, setActivePostUrl] = useState<string>('');
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchPosts = useCallback(async () => {
@@ -49,7 +54,14 @@ const App: React.FC = () => {
 
     try {
       let url = '';
-      if (activeSearchQuery) {
+      if (activePostUrl) {
+        // Basic validation for a Reddit post URL
+        if (!/reddit\.com\/r\//.test(activePostUrl)) {
+          throw new Error("This doesn't look like a valid Reddit post URL.");
+        }
+        const cleanUrl = activePostUrl.split('?')[0].replace(/\/$/, '');
+        url = `${cleanUrl}.json?raw_json=1`;
+      } else if (activeSearchQuery) {
         url = `https://www.reddit.com/search.json?q=${encodeURIComponent(activeSearchQuery)}&sort=${sort}&limit=50&raw_json=1`;
       } else if (sort === 'videos') {
         url = `https://www.reddit.com/r/${subreddit}/search.json?q=site%3Av.redd.it&restrict_sr=on&sort=new&limit=50&raw_json=1`;
@@ -63,8 +75,11 @@ const App: React.FC = () => {
       });
 
       if (!response.ok) {
-        if (response.status === 404 && !activeSearchQuery) {
+        if (response.status === 404 && !activeSearchQuery && !activePostUrl) {
           throw new Error(`Subreddit 'r/${subreddit}' not found or is private.`);
+        }
+        if (activePostUrl) {
+             throw new Error(`Could not fetch the post from the URL. Please check if it's a valid and public Reddit post URL.`);
         }
         throw new Error(`Failed to fetch from Reddit: ${response.statusText} (${response.status})`);
       }
@@ -77,14 +92,23 @@ const App: React.FC = () => {
         console.error("Failed to parse JSON response from Reddit:", parseError, "\nResponse text:", responseText);
         throw new Error("Received an invalid response from Reddit. The API might be temporarily unavailable or blocking requests.");
       }
-
-      if (!data?.data?.children) {
-        console.error("Unexpected JSON structure from Reddit API:", data);
-        throw new Error("Received an unexpected data format from Reddit.");
+      
+      if (activePostUrl) {
+        if (!Array.isArray(data) || !data[0]?.data?.children?.[0]?.data) {
+          throw new Error("The provided URL does not point to a valid Reddit post.");
+        }
+        const fetchedPost = data[0].data.children[0].data;
+        setPosts([fetchedPost]);
+        setSubreddit(fetchedPost.subreddit); // Update subreddit for title display
+      } else {
+        if (!data?.data?.children) {
+          console.error("Unexpected JSON structure from Reddit API:", data);
+          throw new Error("Received an unexpected data format from Reddit.");
+        }
+        const fetchedPosts = data.data.children.map((child: any) => child.data);
+        setPosts(fetchedPosts);
       }
 
-      const fetchedPosts = data.data.children.map((child: any) => child.data);
-      setPosts(fetchedPosts);
     } catch (e) {
       if (e instanceof Error) {
         if (e.name === 'AbortError') {
@@ -100,7 +124,7 @@ const App: React.FC = () => {
         setLoading(false);
       }
     }
-  }, [subreddit, sort, activeSearchQuery]);
+  }, [subreddit, sort, activeSearchQuery, activePostUrl]);
 
   useEffect(() => {
     fetchPosts();
@@ -111,6 +135,7 @@ const App: React.FC = () => {
 
   const handleSubredditChange = (newSubreddit: string) => {
     setActiveSearchQuery('');
+    setActivePostUrl('');
     setSubreddit(newSubreddit);
     // When clearing search, ensure sort is valid for subreddit browsing
     if (sort === 'relevance' || sort === 'comments') {
@@ -123,11 +148,19 @@ const App: React.FC = () => {
   };
 
   const handleGlobalSearch = (query: string) => {
+    setActivePostUrl('');
     setActiveSearchQuery(query);
+    setSubreddit(''); // Clear subreddit context for global search
     // When starting a new search, ensure sort is valid for searching
     if (sort === 'videos') {
         setSort('relevance');
     }
+  };
+  
+  const handleUrlSearch = (url: string) => {
+    setActiveSearchQuery('');
+    setSubreddit('');
+    setActivePostUrl(url);
   };
 
   const renderContent = () => {
@@ -157,6 +190,8 @@ const App: React.FC = () => {
     if (posts.length === 0) {
       const message = activeSearchQuery
         ? `No posts found for your search: "${activeSearchQuery}"`
+        : activePostUrl
+        ? `Could not load the post from the provided URL.`
         : `No posts found in r/${subreddit}.`;
       return <p className="text-center text-slate-400">{message}</p>;
     }
@@ -180,13 +215,12 @@ const App: React.FC = () => {
         onSortChange={handleSortChange}
         activeSearchQuery={activeSearchQuery}
         onGlobalSearch={handleGlobalSearch}
+        activePostUrl={activePostUrl}
+        onUrlSearch={handleUrlSearch}
       />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto p-4 sm:p-6">
         {renderContent()}
       </main>
-      <footer className="text-center py-6 text-slate-500 text-sm">
-        <p>Built for viewing Reddit. Not affiliated with Reddit.</p>
-      </footer>
     </div>
   );
 };
