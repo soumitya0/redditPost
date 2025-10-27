@@ -44,8 +44,8 @@ const Header: React.FC<HeaderProps> = ({
   });
   const [isGloballyExpanded, setIsGloballyExpanded] = useState(true);
 
-  const BROWSE_SORTS = ['hot', 'new', 'top', 'videos'];
-  const SEARCH_SORTS = ['relevance', 'hot', 'top', 'new', 'comments'];
+  const BROWSE_SORTS = ['hot', 'new', 'top', 'engagement', 'videos'];
+  const SEARCH_SORTS = ['relevance', 'hot', 'top', 'new', 'comments', 'engagement'];
   const SORTS = activeSearchQuery ? SEARCH_SORTS : BROWSE_SORTS;
 
   useEffect(() => {

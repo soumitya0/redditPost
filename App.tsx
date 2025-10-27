@@ -12,7 +12,7 @@ const SUBREDDIT_GROUPS = [
   },
   {
     title: 'Animals',
-    channels: ['cats', 'aww', 'Catswhoyell', 'pandas', 'bear', 'BearCubGIFs', 'bearsdoinghumanthings']
+    channels: ['cats', 'aww', 'Catswhoyell', 'pandas', 'bear', 'BearCubGIFs', 'bearsdoinghumanthings', 'Animal', 'Animals', 'AnimalsBeingAnimals', 'AnimalsOnReddit']
   },
   {
     title: 'Food',
@@ -53,67 +53,138 @@ const App: React.FC = () => {
     setPosts([]); // Clear posts for new fetch
 
     try {
-      let url = '';
+      // Logic for fetching a single post by its URL
       if (activePostUrl) {
-        // Basic validation for a Reddit post URL
         if (!/reddit\.com\/r\//.test(activePostUrl)) {
           throw new Error("This doesn't look like a valid Reddit post URL.");
         }
         const cleanUrl = activePostUrl.split('?')[0].replace(/\/$/, '');
-        url = `${cleanUrl}.json?raw_json=1`;
-      } else if (activeSearchQuery) {
-        url = `https://www.reddit.com/search.json?q=${encodeURIComponent(activeSearchQuery)}&sort=${sort}&limit=50&raw_json=1`;
-      } else if (sort === 'videos') {
-        url = `https://www.reddit.com/r/${subreddit}/search.json?q=site%3Av.redd.it&restrict_sr=on&sort=new&limit=50&raw_json=1`;
-      } else {
-        url = `https://www.reddit.com/r/${subreddit}/${sort}.json?limit=50&raw_json=1`;
-      }
-
-      const response = await fetch(url, { 
-        signal,
-        cache: 'no-cache'
-      });
-
-      if (!response.ok) {
-        if (response.status === 404 && !activeSearchQuery && !activePostUrl) {
-          throw new Error(`Subreddit 'r/${subreddit}' not found or is private.`);
+        const url = `${cleanUrl}.json?raw_json=1`;
+        
+        const response = await fetch(url, { signal, cache: 'no-cache' });
+        if (!response.ok) {
+            throw new Error(`Could not fetch the post from the URL. Please check if it's a valid and public Reddit post URL.`);
         }
-        if (activePostUrl) {
-             throw new Error(`Could not fetch the post from the URL. Please check if it's a valid and public Reddit post URL.`);
+        
+        const responseText = await response.text();
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error("Failed to parse JSON response from Reddit:", parseError, "\nResponse text:", responseText);
+          throw new Error("Received an invalid response from Reddit. The API might be temporarily unavailable or blocking requests.");
         }
-        throw new Error(`Failed to fetch from Reddit: ${response.statusText} (${response.status})`);
-      }
-
-      const responseText = await response.text();
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error("Failed to parse JSON response from Reddit:", parseError, "\nResponse text:", responseText);
-        throw new Error("Received an invalid response from Reddit. The API might be temporarily unavailable or blocking requests.");
-      }
-      
-      if (activePostUrl) {
+        
         if (!Array.isArray(data) || !data[0]?.data?.children?.[0]?.data) {
           throw new Error("The provided URL does not point to a valid Reddit post.");
         }
         const fetchedPost = data[0].data.children[0].data;
         setPosts([fetchedPost]);
-        setSubreddit(fetchedPost.subreddit); // Update subreddit for title display
-      } else {
-        if (!data?.data?.children) {
-          console.error("Unexpected JSON structure from Reddit API:", data);
-          throw new Error("Received an unexpected data format from Reddit.");
-        }
-        const fetchedPosts = data.data.children.map((child: any) => child.data);
-        setPosts(fetchedPosts);
+        setSubreddit(fetchedPost.subreddit);
+        return; // Early exit after processing URL
       }
 
+      // Special logic for 'engagement' sort: fetch pages until we have 50 videos > 1.5k upvotes & 50 comments
+      if (sort === 'engagement') {
+          let collectedPosts: RedditPost[] = [];
+          let after: string | null = null;
+          const targetCount = 50;
+          const minScore = 1500;
+          const minComments = 50;
+          const maxPagesToFetch = 5; // Safety break: fetch up to 5 * 100 = 500 posts max.
+          let pagesFetched = 0;
+
+          while (collectedPosts.length < targetCount && pagesFetched < maxPagesToFetch && !signal.aborted) {
+              pagesFetched++;
+              const afterParam = after ? `&after=${after}` : '';
+              const limitParam = `&limit=100`;
+
+              let fetchUrl: string;
+              if (activeSearchQuery) {
+                  // Engagement sort within a search query
+                  fetchUrl = `https://www.reddit.com/search.json?q=${encodeURIComponent(activeSearchQuery)}&sort=top&raw_json=1${limitParam}${afterParam}`;
+              } else {
+                  // Engagement sort within a subreddit
+                  fetchUrl = `https://www.reddit.com/r/${subreddit}/top.json?t=all&raw_json=1${limitParam}${afterParam}`;
+              }
+
+              const response = await fetch(fetchUrl, { signal, cache: 'no-cache' });
+              if (!response.ok) {
+                  if (response.status === 404 && !activeSearchQuery) {
+                      throw new Error(`Subreddit 'r/${subreddit}' not found or is private.`);
+                  }
+                  throw new Error(`Failed to fetch from Reddit (page ${pagesFetched}): ${response.statusText}`);
+              }
+              
+              const data = await response.json();
+              if (!data?.data?.children || data.data.children.length === 0) {
+                  break; // No more posts to fetch
+              }
+
+              const qualifyingPosts: RedditPost[] = data.data.children
+                  .map((child: any) => child.data)
+                  .filter((p: RedditPost) => p.is_video && p.score > minScore && p.num_comments > minComments);
+
+              collectedPosts.push(...qualifyingPosts);
+
+              after = data.data.after;
+              if (!after) {
+                  break; // Reached the last page
+              }
+          }
+
+          if (signal.aborted) {
+            console.log('Fetch aborted during engagement post collection.');
+            return;
+          }
+          
+          setPosts(collectedPosts.slice(0, targetCount));
+
+      } else { // Standard logic for all other sort types
+          let url = '';
+          const apiSort = sort;
+
+          if (activeSearchQuery) {
+              url = `https://www.reddit.com/search.json?q=${encodeURIComponent(activeSearchQuery)}&sort=${apiSort}&limit=50&raw_json=1`;
+          } else if (sort === 'videos') {
+              url = `https://www.reddit.com/r/${subreddit}/search.json?q=site%3Av.redd.it&restrict_sr=on&sort=new&limit=50&raw_json=1`;
+          } else {
+              url = `https://www.reddit.com/r/${subreddit}/${apiSort}.json?limit=50&raw_json=1`;
+          }
+
+          const response = await fetch(url, { 
+              signal,
+              cache: 'no-cache'
+          });
+
+          if (!response.ok) {
+              if (response.status === 404 && !activeSearchQuery && !activePostUrl) {
+                  throw new Error(`Subreddit 'r/${subreddit}' not found or is private.`);
+              }
+              throw new Error(`Failed to fetch from Reddit: ${response.statusText} (${response.status})`);
+          }
+
+          const responseText = await response.text();
+          let data;
+          try {
+              data = JSON.parse(responseText);
+          } catch (parseError) {
+              console.error("Failed to parse JSON response from Reddit:", parseError, "\nResponse text:", responseText);
+              throw new Error("Received an invalid response from Reddit. The API might be temporarily unavailable or blocking requests.");
+          }
+          
+          if (!data?.data?.children) {
+              console.error("Unexpected JSON structure from Reddit API:", data);
+              throw new Error("Received an unexpected data format from Reddit.");
+          }
+          let fetchedPosts = data.data.children.map((child: any) => child.data);
+          setPosts(fetchedPosts);
+      }
     } catch (e) {
       if (e instanceof Error) {
         if (e.name === 'AbortError') {
           console.log('Fetch aborted.');
-          return; // Don't set error for aborted requests
+          return;
         }
         setError(e.message);
       } else {
@@ -188,11 +259,21 @@ const App: React.FC = () => {
     }
 
     if (posts.length === 0) {
-      const message = activeSearchQuery
-        ? `No posts found for your search: "${activeSearchQuery}"`
-        : activePostUrl
-        ? `Could not load the post from the provided URL.`
-        : `No posts found in r/${subreddit}.`;
+      let message: string;
+      if (sort === 'engagement') {
+        const criteria = "with over 1,500 upvotes and 50 comments";
+        if (activeSearchQuery) {
+          message = `Could not find enough videos matching "${activeSearchQuery}" ${criteria}.`;
+        } else {
+          message = `Could not find enough videos in r/${subreddit} ${criteria}. Try another subreddit.`;
+        }
+      } else if (activeSearchQuery) {
+        message = `No posts found for your search: "${activeSearchQuery}"`;
+      } else if (activePostUrl) {
+        message = `Could not load the post from the provided URL.`;
+      } else {
+        message = `No posts found in r/${subreddit}.`;
+      }
       return <p className="text-center text-slate-400">{message}</p>;
     }
 
