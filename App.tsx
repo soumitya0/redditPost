@@ -12,7 +12,7 @@ const SUBREDDIT_GROUPS = [
   },
   {
     title: 'Animals',
-    channels: ['cats', 'aww', 'Catswhoyell', 'pandas', 'bear', 'BearCubGIFs', 'bearsdoinghumanthings', 'Animal', 'Animals', 'AnimalsBeingAnimals', 'AnimalsOnReddit']
+    channels: ['cats', 'aww', 'Catswhoyell', 'pandas', 'bear', 'BearCubGIFs', 'bearsdoinghumanthings', 'Animal', 'Animals', 'AnimalsBeingAnimals', 'AnimalsOnReddit', 'NatureIsFuckingLit']
   },
   {
     title: 'Food',
