@@ -29,6 +29,18 @@ const SUBREDDIT_GROUPS = [
   {
     title: 'Calm Night',
     channels: ['TheNightFeeling']
+  },
+  {
+    title: 'Automotive',
+    channels: ['carspotting', 'spotted', 'supercars', 'Justrolledintotheshop', 'motorcycles', 'MotorcycleMechanics', 'AwesomeCarMods', 'MechanicAdvice']
+  },
+  {
+    title: 'AI',
+    channels: ['aivideo', 'aiecosystem', 'Fauxmoi', 'ChatGPT', 'AIGrinding', 'SoraAi']
+  },
+  {
+    title: 'Watches',
+    channels: ['Repdesignerwatch1', 'RepWatchForum', 'Watches', 'repwatchbuysell', 'Makera']
   }
 ];
 
