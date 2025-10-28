@@ -117,7 +117,7 @@ Your task is to determine the following:
               tags: {
                 type: Type.ARRAY,
                 items: { type: Type.STRING },
-                description: "An array of 5 relevant hashtags without the '#' symbol."
+                description: "An array of 5 relevant, lowercase hashtags without the '#' symbol."
               }
             },
             required: ["title", "description", "tags"]
