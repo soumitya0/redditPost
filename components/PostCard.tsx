@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { RedditPost } from '../types';
 import YouTubeModal from './YouTubeModal';
+import SeoQuestionModal from './SeoQuestionModal';
 
 interface PostCardProps {
   post: RedditPost;
@@ -15,6 +16,7 @@ const formatNumber = (num: number): string => {
 
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
+  const [isSeoModalOpen, setIsSeoModalOpen] = useState(false);
   const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -153,6 +155,14 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     }
   };
 
+  const handleOpenSeoModal = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (videoUrl) {
+      setIsSeoModalOpen(true);
+    }
+  };
+
   const renderMedia = () => {
     if (post.is_video && post.media?.reddit_video) {
         const isGif = post.media.reddit_video.is_gif;
@@ -272,7 +282,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           <div className="flex items-center justify-between text-sm text-slate-400 mt-auto">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-1">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w.org/2000/svg" className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                 </svg>
                 <span>{formatNumber(post.score)}</span>
@@ -287,12 +297,24 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             <div className="flex items-center space-x-2">
               {videoUrl && (
                 <button
+                  onClick={handleOpenSeoModal}
+                  className="flex items-center justify-center w-10 h-8 rounded-md bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition-all"
+                  aria-label="Generate SEO Question"
+                  title="Generate SEO question for YouTube"
+                >
+                  <svg xmlns="http://www.w.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
+              {videoUrl && (
+                <button
                   onClick={handleOpenYouTubeModal}
                   className="flex items-center justify-center w-10 h-8 rounded-md bg-red-600 text-white font-semibold text-xs hover:bg-red-700 transition-all"
                   aria-label="Prepare for YouTube Upload"
                   title="Generate title & description for YouTube"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <svg xmlns="http://www.w.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M21.582,6.186c-0.23-0.86-0.908-1.538-1.768-1.768C18.254,4,12,4,12,4S5.746,4,4.186,4.418 c-0.86,0.23-1.538,0.908-1.768,1.768C2,7.746,2,12,2,12s0,4.254,0.418,5.814c0.23,0.86,0.908,1.538,1.768,1.768 C5.746,20,12,20,12,20s6.254,0,7.814-0.418c0.861-0.23,1.538-0.908,1.768-1.768C22,16.254,22,12,22,12S22,7.746,21.582,6.186z M10,15.464V8.536L16,12L10,15.464z" />
                   </svg>
                 </button>
@@ -320,6 +342,12 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           onClose={() => setIsYouTubeModalOpen(false)}
           onConfirm={() => handleDownload()}
           videoUrl={videoUrl}
+        />
+      )}
+      {isSeoModalOpen && videoUrl && (
+        <SeoQuestionModal
+          post={post}
+          onClose={() => setIsSeoModalOpen(false)}
         />
       )}
     </>
