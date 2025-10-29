@@ -11,6 +11,10 @@ const SUBREDDIT_GROUPS = [
     channels: ['newsokur', 'japanlife', 'japanpics', 'anime', 'manga', 'JapaneseFood', 'ramen', 'ghibli', 'tokyo']
   },
   {
+    title: 'Travel',
+    channels: ['roadtrip', 'SoloTravel_India', 'hiking', 'backpacking', 'camping', 'travel', 'Survival', 'coloradohikers', 'pics']
+  },
+  {
     title: 'Animals',
     channels: ['cats', 'aww', 'Catswhoyell', 'pandas', 'bear', 'BearCubGIFs', 'bearsdoinghumanthings', 'Animal', 'Animals', 'AnimalsBeingAnimals', 'AnimalsOnReddit', 'NatureIsFuckingLit']
   },
@@ -157,7 +161,12 @@ const App: React.FC = () => {
           const apiSort = sort;
 
           if (activeSearchQuery) {
-              url = `https://www.reddit.com/search.json?q=${encodeURIComponent(activeSearchQuery)}&sort=${apiSort}&limit=50&raw_json=1`;
+              if (sort === 'videos') {
+                  const videoQuery = `${activeSearchQuery} site:v.redd.it`;
+                  url = `https://www.reddit.com/search.json?q=${encodeURIComponent(videoQuery)}&sort=relevance&limit=50&raw_json=1`;
+              } else {
+                  url = `https://www.reddit.com/search.json?q=${encodeURIComponent(activeSearchQuery)}&sort=${apiSort}&limit=50&raw_json=1`;
+              }
           } else if (sort === 'videos') {
               url = `https://www.reddit.com/r/${subreddit}/search.json?q=site%3Av.redd.it&restrict_sr=on&sort=new&limit=50&raw_json=1`;
           } else {
@@ -234,10 +243,6 @@ const App: React.FC = () => {
     setActivePostUrl('');
     setActiveSearchQuery(query);
     setSubreddit(''); // Clear subreddit context for global search
-    // When starting a new search, ensure sort is valid for searching
-    if (sort === 'videos') {
-        setSort('relevance');
-    }
   };
   
   const handleUrlSearch = (url: string) => {
