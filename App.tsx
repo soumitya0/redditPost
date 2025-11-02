@@ -11,6 +11,14 @@ const SUBREDDIT_GROUPS = [
     channels: ['newsokur', 'japanlife', 'japanpics', 'anime', 'manga', 'JapaneseFood', 'ramen', 'ghibli', 'tokyo']
   },
   {
+    title: 'Geopolitical',
+    channels: ['World_Politics', 'politics', 'internationalpolitics', 'PoliticalDiscussion', 'NonCredibleDiplomacy', 'worldnews', 'conspiracy', 'economy', 'geopolitics']
+  },
+  {
+    title: 'Military',
+    channels: ['TankPorn', 'NFA', 'CatastrophicFailure', 'spaceporn', 'shittytechnicals', 'WarshipPorn', 'submarines', 'MilitaryPorn']
+  },
+  {
     title: 'Travel',
     channels: ['roadtrip', 'SoloTravel_India', 'hiking', 'backpacking', 'camping', 'travel', 'Survival', 'coloradohikers', 'pics']
   },
