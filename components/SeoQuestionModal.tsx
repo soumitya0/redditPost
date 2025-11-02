@@ -13,6 +13,7 @@ interface SeoContent {
     shortsTitle: string;
     searchQuestion: string;
     suggestedHashtags: string[];
+    youtubeTags: string;
 }
 
 const SeoQuestionModal: React.FC<SeoQuestionModalProps> = ({ post, onClose }) => {
@@ -34,7 +35,7 @@ const SeoQuestionModal: React.FC<SeoQuestionModalProps> = ({ post, onClose }) =>
 *   **Subreddit:** r/${post.subreddit}
 *   **Original Title:** "${post.title}"
 
-**Your task is to generate a JSON object with three distinct, optimized assets:**
+**Your task is to generate a JSON object with four distinct, optimized assets:**
 
 1.  **\`shortsTitle\` (For the Shorts Feed):**
     *   **Goal:** Stop the scroll. Maximize immediate engagement.
@@ -49,6 +50,11 @@ const SeoQuestionModal: React.FC<SeoQuestionModalProps> = ({ post, onClose }) =>
 3.  **\`suggestedHashtags\` (For Browse & Categorization):**
     *   **Goal:** Help YouTube's algorithm understand and categorize the video.
     *   **Constraint:** An array of 3 to 5 relevant, lowercase hashtags (as strings, without the '#'). **The first hashtag MUST be "shorts".**
+
+4.  **\`youtubeTags\` (For Video Tags Section):**
+    *   **Goal:** Provide detailed keywords to help YouTube's algorithm understand the video's niche.
+    *   **Constraint:** A single comma-separated string of relevant keywords. The total length should be around 400 characters, but not exceeding 500. Include a mix of broad and specific terms.
+    *   **Example:** "funny cat, cat video, clumsy cat, cat fall, animal fail, pet video, home video, fail compilation"
 
 Generate this complete YouTube Growth Kit based on the provided video details.`,
         config: {
@@ -68,9 +74,13 @@ Generate this complete YouTube Growth Kit based on the provided video details.`,
                 type: Type.ARRAY,
                 items: { type: Type.STRING },
                 description: "An array of 3-5 relevant, lowercase hashtags, with 'shorts' being the first one."
+              },
+              youtubeTags: {
+                type: Type.STRING,
+                description: "A comma-separated string of keywords for YouTube video tags, around 400 characters long."
               }
             },
-            required: ["shortsTitle", "searchQuestion", "suggestedHashtags"]
+            required: ["shortsTitle", "searchQuestion", "suggestedHashtags", "youtubeTags"]
           }
         }
       });
@@ -180,6 +190,12 @@ Generate this complete YouTube Growth Kit based on the provided video details.`,
                     'For Browse & Categorization. Add these to your description.',
                     seoContent.suggestedHashtags.map(t => `#${t}`).join(' '),
                     'tags'
+                  )}
+                   {renderAsset(
+                    'YouTube Tags',
+                    'For the "Tags" section in YouTube Studio. Helps with discoverability.',
+                    seoContent.youtubeTags,
+                    'youtubetags'
                   )}
                 </div>
             )}
