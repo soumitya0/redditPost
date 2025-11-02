@@ -39,6 +39,10 @@ const SUBREDDIT_GROUPS = [
     channels: ['carspotting', 'spotted', 'supercars', 'Justrolledintotheshop', 'motorcycles', 'MotorcycleMechanics', 'AwesomeCarMods', 'MechanicAdvice']
   },
   {
+    title: 'Military',
+    channels: ['TankPorn', 'WarplanePorn', 'WarshipPorn', 'submarines']
+  },
+  {
     title: 'AI',
     channels: ['aivideo', 'aiecosystem', 'Fauxmoi', 'ChatGPT', 'AIGrinding', 'SoraAi']
   },
